@@ -12,6 +12,7 @@ import plotly.figure_factory as ff
 import plotly.express as px
 import plotly.graph_objects as go
 
+
 # Input Parameters #
 folder_path = "./AI_15676-15677" # Folder path for the chirp up and/or chirp down data
 T = 10 # ms - T used for AI
@@ -43,7 +44,6 @@ elif set(['chirp_down']).issubset(subdirs):
 
 st.title("AI Analysis")
 st.write(f"Basename: {basename}")
-
 
 # Defining the fit function for the AI #
 def fringe_fit(a,C,g,ct, T=10e-3): # a is chirp rate, C is contrast, g is gravitational acceleration
@@ -123,9 +123,15 @@ ideal = []
 delta = (vibration*1e-5)/((2*np.pi/keff_max)*1e6)
 dof = 3
 n_points_init = 200
+stdev_init = 0.0022
+stdev = float(st.text_input("Enter custom standard deviation:", value=f"{stdev_init}"))
+
 n_points = int(st.text_input("Enter custom number of points:", value=f"{n_points_init}"))
 contrast_set_init = -0.15
 contrast_set = float(st.text_input("Enter custom contrast:", value=f"{-2*contrast_set_init}"))*-0.5
+
+upper_bound = abs(contrast_set)+ct_fit
+lower_bound = ct_fit-abs(contrast_set)
 
 min_value = 24.95
 max_value = 25.2
@@ -135,14 +141,47 @@ slider = st.slider('Select a range for x axis study', min_value, max_value, valu
 start = slider[0]
 end = slider[1]
 
-for i, a in enumerate(np.linspace(start,end, n_points)):
-    current = fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T)
-    bounded_points = []
-    for num in np.linspace(-delta, delta, int((10*delta/0.012)*n_points)):
-        bounded_points.append(fringe_fit((a+num)*1e6, contrast_set, g_fit, ct_fit, T=T))
+ideal = fringe_fit(np.linspace(start,end, n_points)*1e6, contrast_set, g_fit, ct_fit, T=T)
+
+def check_bounds(array):
+    upper_indices = []
+    lower_indices = []
+    for i, a in enumerate(array):
+        if a > upper_bound:
+            upper_indices.append(i)
+        elif a < lower_bound:
+            lower_indices.append(i)
     
-    plotlist.append(random.choice(bounded_points))
-    ideal.append(fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T))
+    return upper_indices, lower_indices, len(upper_indices)!=len(lower_indices)
+
+def try_exchange(noise, upper_indices, lower_indices):
+    for i in range(min(len(upper_indices), len(lower_indices))):
+        up = upper_indices.pop(0)
+        low = lower_indices.pop(0)
+        noise[up], noise[low] = noise[low], noise[up]
+
+## VIBRATION LOOP ##
+if vibration>0:
+    for i, a in enumerate(np.linspace(start,end, n_points)):
+        current = fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T)
+        bounded_points = []
+        for num in np.linspace(-delta, delta, int((10*delta/0.012)*n_points)):
+            bounded_points.append(fringe_fit((a+num)*1e6, contrast_set, g_fit, ct_fit, T=T))
+        
+        plotlist.append(random.choice(bounded_points))
+        # ideal.append(fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T))
+
+## TYPE 1 NOISE LOOP ##
+while True:
+    noise = np.random.normal(0, stdev, n_points)
+    plotlist = plotlist+noise
+
+    if check_bounds(plotlist)[2]:
+        continue
+
+    if len(check_bounds(plotlist)[0]) > 0:
+        try_exchange(noise, check_bounds(plotlist)[0], check_bounds(plotlist)[1])
+    break
 
 params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), np.linspace(start,end, n_points), plotlist, p0=[contrast_set, g_fit, ct_fit])
 
@@ -164,7 +203,7 @@ ax2.set_xlabel("Gravitational Acceleration (mGal)")
 ax1.set_xlabel("Chirp Rate (MHz/s)")
 ax2.axvline(x=params[1]*1e5, color="green", linestyle="--", label="g-value")
 ax1.scatter(np.linspace(start,end, n_points), plotlist, alpha=0.5, label=f"{n_points} Noise added data points")
-plt.figtext(0.05, -0.1, "$\sigma_{z}$ = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal"+"\nGravity ideal = "+str(g_fit*1e5)+" mGal"+"\nGravity noise = "+str(g_value_plot)+" $\pm$ "+str(g_res_plot)+" mGal\n$\chi^2_{red}$ = "+str(redchisq_plot)+"\nContrast of ideal line = "+str(abs(2*contrast_set))+"\nContrast of noise line = "+'{:.3f}'.format(2*params[0]));
+plt.figtext(0.05, -0.14, "$\sigma_{z}$ = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal"+"\nNoise added to the data with stdev: "+str(stdev)+"\nGravity ideal = "+str(g_fit*1e5)+" mGal"+"\nGravity noise = "+str(g_value_plot)+" $\pm$ "+str(g_res_plot)+" mGal\n$\chi^2_{red}$ = "+str(redchisq_plot)+"\nContrast of ideal line = "+str(abs(2*contrast_set))+"\nContrast of noise line = "+'{:.3f}'.format(2*params[0]));
 ax1.legend()
 plt.title("Vibration Noise, T = "+ str(T*1e3)+ " ms");
 
