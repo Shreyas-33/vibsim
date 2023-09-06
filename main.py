@@ -152,7 +152,7 @@ g_res_plot = '{:.3f}'.format(2 * errors[1] * 1e5)  # g-resolution in mGal
 redchisq_plot = '{:.3e}'.format(np.sum((fringe_fit(np.linspace(start, end, n_points)*1e6, *params, T=T) - np.array(plotlist))**2 / (np.array(plotlist))))
 
 
-fig = plt.figure(figsize=(10,14))
+fig = plt.figure(figsize=(10, 8))
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twiny()
 
@@ -164,7 +164,7 @@ ax2.set_xlabel("Gravitational Acceleration (mGal)")
 ax1.set_xlabel("Chirp Rate (MHz/s)")
 ax2.axvline(x=params[1]*1e5, color="green", linestyle="--", label="g-value")
 ax1.scatter(np.linspace(start,end, n_points), plotlist, alpha=0.5, label=f"{n_points} Noise added data points")
-plt.figtext(0.05, 0, "$\sigma_{z}$ = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal"+"\nGravity ideal = "+str(g_fit*1e5)+" mGal"+"\nGravity noise = "+str(g_value_plot)+" $\pm$ "+str(g_res_plot)+" mGal\n$\chi^2_{red}$ = "+str(redchisq_plot)+"\nContrast of ideal line = "+str(abs(2*contrast_set))+"\nContrast of noise line = "+'{:.3f}'.format(2*params[0]));
+plt.figtext(0.05, -0.05, "$\sigma_{z}$ = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal"+"\nGravity ideal = "+str(g_fit*1e5)+" mGal"+"\nGravity noise = "+str(g_value_plot)+" $\pm$ "+str(g_res_plot)+" mGal\n$\chi^2_{red}$ = "+str(redchisq_plot)+"\nContrast of ideal line = "+str(abs(2*contrast_set))+"\nContrast of noise line = "+'{:.3f}'.format(2*params[0]));
 ax1.legend()
 plt.title("Vibration Noise, T = "+ str(T*1e3)+ " ms");
 
