@@ -172,16 +172,17 @@ if vibration>0:
         # ideal.append(fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T))
 
 ## TYPE 1 NOISE LOOP ##
-while True:
-    noise = np.random.normal(0, stdev, n_points)
-    plotlist = plotlist+noise
+if stdev!=0:
+    while True:
+        noise = np.random.normal(0, stdev, n_points)
+        plotlist = plotlist+noise
 
-    if check_bounds(plotlist)[2]:
-        continue
+        if check_bounds(plotlist)[2]:
+            continue
 
-    if len(check_bounds(plotlist)[0]) > 0:
-        try_exchange(noise, check_bounds(plotlist)[0], check_bounds(plotlist)[1])
-    break
+        if len(check_bounds(plotlist)[0]) > 0:
+            try_exchange(noise, check_bounds(plotlist)[0], check_bounds(plotlist)[1])
+        break
 
 params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), np.linspace(start,end, n_points), plotlist, p0=[contrast_set, g_fit, ct_fit])
 
