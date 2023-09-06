@@ -168,3 +168,45 @@ ax1.legend()
 plt.title("Vibration Noise, T = "+ str(T*1e3)+ " ms");
 
 st.pyplot(fig)
+
+# st.markdown("""---""")
+
+st.title("Fixed parameters, Multiple runs errorchart")
+
+gvals = []
+gerrors = []
+n_runs_init = 100
+n_runs = int(st.text_input("Enter custom number of runs:", value=f"{n_runs_init}"))
+
+for i in range(n_runs):
+    plotlist = []
+    ideal = []
+
+    for i, a in enumerate(np.linspace(start,end, n_points)):
+        current = fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T)
+        bounded_points = []
+        for num in np.linspace(-delta, delta, int((10*delta/0.012)*n_points)):
+            bounded_points.append(fringe_fit((a+num)*1e6, contrast_set, g_fit, ct_fit, T=T))
+        
+        plotlist.append(random.choice(bounded_points))
+        ideal.append(fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T))
+
+    params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), np.linspace(start,end, n_points), plotlist, p0=[contrast_set, g_fit, ct_fit])
+
+    errors = np.sqrt(np.diag(cov))
+    g_value_plot = '{:.3f}'.format(params[1] * 1e5)
+    g_res_plot = '{:.3f}'.format(2 * errors[1] * 1e5)  # g-resolution in mGal
+    redchisq_plot = '{:.3e}'.format(np.sum((fringe_fit(np.linspace(start, end, n_points)*1e6, *params, T=T) - np.array(plotlist))**2 / (np.array(plotlist))))
+
+    gvals.append(float(g_value_plot))
+    gerrors.append(float(g_res_plot))
+
+fig = plt.figure(figsize=(12,8))
+plt.errorbar(range(n_runs), gvals, yerr=gerrors, fmt='o')
+plt.hlines(g_fit*1e5, 0, n_runs, color="red", label="Ideal g-value")
+plt.ylim(0.99999*g_fit*1e5, 1.00001*g_fit*1e5)
+plt.xlabel("Number of iterations")
+plt.ylabel("Gravitational Acceleration (mGal)")
+plt.title(f"Vibration Noise over {n_runs} iterations, No of points in fringe = {n_points}, T={T*1e3} ms, Contrast = "+str(abs(2*contrast_set))+ ", $\sigma_{z}$ = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal")
+
+st.pyplot(fig)
