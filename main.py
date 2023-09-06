@@ -94,6 +94,7 @@ fig.add_trace(go.Scatter(x=x_cu*1e-6, y=fringe_fit(x_cu, *params_cu), mode='line
 
 st.plotly_chart(fig, use_container_width=True)
 st.write(f"Gravity = {g_value_plot} $\pm$ {g_res_plot} mGal")
+st.write(f"Contrast = {abs(2*C_fit)}")
 
 ## draw horizontal line in streamlit
 st.markdown("""---""")
