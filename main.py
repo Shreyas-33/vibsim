@@ -87,17 +87,18 @@ redchisq_plot = '{:.3e}'.format(np.sum((fringe_fit(x_cu, *params_cu) - y_cu)**2 
 
 fig = go.Figure()
 
-min_x = np.min(x_cu)
-max_x = np.max(x_cu)
-
-st.text_input("Enter custom minimum for x-axis (MHz/s):", value=f"{min_x}")
-st.text_input("Enter custom maximum for x-axis (MHz/s):", value=f"{max_x}")
 
 fig.add_trace(go.Scatter(x=x_cu*1e-6, y=y_cu, mode='markers', name='Data'))
 fig.add_trace(go.Scatter(x=x_cu*1e-6, y=fringe_fit(x_cu, *params_cu), mode='lines', name='Fit'))
 
 
 st.plotly_chart(fig, use_container_width=True)
+st.write(f"Gravity = {g_value_plot} $\pm$ {g_res_plot} mGal")
+
+## draw horizontal line in streamlit
+st.markdown("""---""")
+
+st.title("Vibration simulation")
 
 T_init = 10e-3
 T = float(st.text_input("Enter custom T (ms):", value=f"{T_init*1e3}"))*1e-3
@@ -109,8 +110,8 @@ expand = -0                # For 20 ms
 start_init = np.min(x_cu- leftshift*25.06)*1e-6 - (leftshift)*25.06*1e-6
 end_init = np.max(x_cu)*1e-6 - (leftshift-expand)*25.06*1e-6
 
-start = float(st.text_input("Enter custom minimum for x-axis (MHz/s):", value=f"{start_init}"))
-end = float(st.text_input("Enter custom maximum for x-axis (MHz/s):", value=f"{end_init}"))
+# start = float(st.text_input("Enter custom minimum for x-axis (MHz/s):", value=f"{start_init}"))
+# end = float(st.text_input("Enter custom maximum for x-axis (MHz/s):", value=f"{end_init}"))
 
 vibration_init = 5
 vibration = float(st.text_input("Enter custom vibration noise (mgal):", value=f"{vibration_init}"))
@@ -124,6 +125,14 @@ n_points_init = 200
 n_points = int(st.text_input("Enter custom number of points:", value=f"{n_points_init}"))
 contrast_set_init = -0.15
 contrast_set = float(st.text_input("Enter custom contrast:", value=f"{-2*contrast_set_init}"))*-0.5
+
+min_value = 24.95
+max_value = 25.2
+value = [25.05, 25.08] # this is a list of two values
+step = 0.0001
+slider = st.slider('Select a range for x axis study', min_value, max_value, value, step)
+start = slider[0]
+end = slider[1]
 
 for i, a in enumerate(np.linspace(start,end, n_points)):
     current = fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T)
