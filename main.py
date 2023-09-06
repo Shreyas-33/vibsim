@@ -171,7 +171,7 @@ st.pyplot(fig)
 
 # st.markdown("""---""")
 
-st.title("Fixed parameters, Multiple runs errorchart")
+st.title("Multiple runs errorchart")
 
 gvals = []
 gerrors = []
