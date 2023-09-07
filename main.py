@@ -174,15 +174,18 @@ if vibration>0:
 ## TYPE 1 NOISE LOOP ##
 if stdev!=0:
     while True:
+        plotlist_temp = plotlist.copy()
         noise = np.random.normal(0, stdev, n_points)
-        plotlist = plotlist+noise
+        plotlist_temp = plotlist_temp+noise
 
-        if check_bounds(plotlist)[2]:
+        if check_bounds(plotlist_temp)[2]:
             continue
 
-        if len(check_bounds(plotlist)[0]) > 0:
-            try_exchange(noise, check_bounds(plotlist)[0], check_bounds(plotlist)[1])
+        if len(check_bounds(plotlist_temp)[0]) > 0:
+            try_exchange(noise, check_bounds(plotlist_temp)[0], check_bounds(plotlist_temp)[1])
         break
+
+    plotlist = plotlist_temp
 
 params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), np.linspace(start,end, n_points), plotlist, p0=[contrast_set, g_fit, ct_fit])
 
