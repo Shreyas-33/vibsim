@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit
 import plotly.figure_factory as ff
 import plotly.express as px
 import plotly.graph_objects as go
-
+import time
 
 # Input Parameters #
 folder_path = "./AI_15676-15677" # Folder path for the chirp up and/or chirp down data
@@ -100,6 +100,7 @@ st.write(f"Contrast = {abs(2*C_fit)}")
 st.markdown("""---""")
 
 st.title("Vibration simulation")
+print("__________________")
 
 T_init = 10e-3
 T = float(st.text_input("Enter custom T (ms):", value=f"{T_init*1e3}"))*1e-3
@@ -174,10 +175,18 @@ if vibration!=0:
         # ideal.append(fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T))
 else:
     plotlist = ideal.copy()
+    print("0 vibration!")
+
+print("Vibration block complete!")
 
 ## TYPE 1 NOISE LOOP ##
 if stdev!=0:
+    start = time.time()
     while True:
+        if (time.time() - start) > 40:
+            st.error("TIMEOUT")
+            st.toast("Try reducing stdev. Unable to generate a suitable noise array in 40 seconds!")
+            break
         plotlist_temp = plotlist.copy()
         noise = np.random.normal(0, stdev, n_points)
         plotlist_temp = plotlist_temp+noise
@@ -187,9 +196,18 @@ if stdev!=0:
 
         if len(check_bounds(plotlist_temp)[0]) > 0:
             try_exchange(noise, check_bounds(plotlist_temp)[0], check_bounds(plotlist_temp)[1])
-        break
+        
+        if len(check_bounds(plotlist_temp)[0])==0 and len(check_bounds(plotlist_temp)[1])==0:
+            break
+
+    if max(plotlist_temp) > upper_bound or min(plotlist_temp) < lower_bound:
+        st.error("Stdev too high! Chart exceeds contrast bounds!")
 
     plotlist = plotlist_temp
+else:
+    print("0 type 1 noise!")
+
+print("Type 1 noise block complete!")
 
 params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), x_eval, plotlist, p0=[contrast_set, g_fit, ct_fit])
 
@@ -218,6 +236,7 @@ plt.title("Vibration Noise, T = "+ str(T*1e3)+ " ms");
 st.pyplot(fig)
 
 # st.markdown("""---""")
+print("First figure complete!")
 
 st.title("Multiple runs errorchart ["+"$\pm$"+ "2"+"$\sigma$" +"]]")
 
@@ -228,7 +247,6 @@ n_runs = int(st.text_input("Enter custom number of runs:", value=f"{n_runs_init}
 
 for i in range(n_runs):
     plotlist = []
-    print("Run no ", i)
 
     if vibration!=0:
         for i, a in enumerate(x_eval):
@@ -267,6 +285,8 @@ for i in range(n_runs):
     gvals.append(float(g_value_plot))
     gerrors.append(float(g_res_plot))
 
+print("Multiple runs complete!")
+
 fig = plt.figure(figsize=(12,8))
 plt.errorbar(range(n_runs), gvals, yerr=gerrors, fmt='o')
 plt.hlines(g_fit*1e5, 0, n_runs, color="red", label="Ideal g-value")
@@ -276,3 +296,5 @@ plt.ylabel("Gravitational Acceleration (mGal)")
 plt.title(f"Vibration Noise over {n_runs} iterations, No of points in fringe = {n_points}, T={T*1e3} ms, Contrast = "+str(abs(2*contrast_set))+ ", "+"$\sigma_{z}$"+" = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal")
 
 st.pyplot(fig)
+
+print("Final figure complete!")
