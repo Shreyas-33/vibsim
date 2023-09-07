@@ -165,7 +165,8 @@ if vibration>0:
     for i, a in enumerate(np.linspace(start,end, n_points)):
         current = fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T)
         bounded_points = []
-        for num in np.linspace(-delta, delta, int((10*delta/0.012)*n_points)):
+        num_bounded_points = max(200, int((10*delta/((end-start)/25.06))*n_points))
+        for num in np.linspace(-delta, delta, num_bounded_points):
             bounded_points.append(fringe_fit((a+num)*1e6, contrast_set, g_fit, ct_fit, T=T))
         
         plotlist.append(random.choice(bounded_points))
