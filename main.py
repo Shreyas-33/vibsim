@@ -208,7 +208,7 @@ ax2.set_xlabel("Gravitational Acceleration (mGal)")
 ax1.set_xlabel("Chirp Rate (MHz/s)")
 ax2.axvline(x=params[1]*1e5, color="green", linestyle="--", label="g-value")
 ax1.scatter(np.linspace(start,end, n_points), plotlist, alpha=0.5, label=f"{n_points} Noise added data points")
-plt.figtext(0.05, -0.14, "$\sigma_{z}$ = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal"+"\nNoise added to the data with stdev: "+str(stdev)+"\nGravity ideal = "+str(g_fit*1e5)+" mGal"+"\nGravity noise = "+str(g_value_plot)+" $\pm$ "+str(g_res_plot)+" mGal\n$\chi^2_{red}$ = "+str(redchisq_plot)+"\nContrast of ideal line = "+str(abs(2*contrast_set))+"\nContrast of noise line = "+'{:.3f}'.format(2*params[0]));
+plt.figtext(0.05, -0.14, r"$\sigma_{z}$" + " = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal"+"\nNoise added to the data with stdev: "+str(stdev)+"\nGravity ideal = "+str(g_fit*1e5)+" mGal"+"\nGravity noise = "+str(g_value_plot)+" " + r"$\pm$"+" "+str(g_res_plot)+" mGal\n"+r"$\chi^2_{red}$"+" = "+str(redchisq_plot)+"\nContrast of ideal line = "+str(abs(2*contrast_set))+"\nContrast of noise line = "+'{:.3f}'.format(2*params[0]));
 ax1.legend()
 plt.title("Vibration Noise, T = "+ str(T*1e3)+ " ms");
 
@@ -216,7 +216,7 @@ st.pyplot(fig)
 
 # st.markdown("""---""")
 
-st.title("Multiple runs errorchart [$\pm$ 2$\sigma$]]")
+st.title("Multiple runs errorchart ["+r"$\pm$"+ "2"+r"$\sigma$" +"]]")
 
 gvals = []
 gerrors = []
@@ -252,6 +252,6 @@ plt.hlines(g_fit*1e5, 0, n_runs, color="red", label="Ideal g-value")
 plt.ylim(0.99999*g_fit*1e5, 1.00001*g_fit*1e5)
 plt.xlabel("Number of iterations")
 plt.ylabel("Gravitational Acceleration (mGal)")
-plt.title(f"Vibration Noise over {n_runs} iterations, No of points in fringe = {n_points}, T={T*1e3} ms, Contrast = "+str(abs(2*contrast_set))+ ", $\sigma_{z}$ = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal")
+plt.title(f"Vibration Noise over {n_runs} iterations, No of points in fringe = {n_points}, T={T*1e3} ms, Contrast = "+str(abs(2*contrast_set))+ ", "+r"$\sigma_{z}$"+" = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal")
 
 st.pyplot(fig)
