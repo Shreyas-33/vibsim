@@ -142,6 +142,7 @@ start = slider[0]
 end = slider[1]
 
 ideal = fringe_fit(np.linspace(start,end, n_points)*1e6, contrast_set, g_fit, ct_fit, T=T)
+x_eval = np.linspace(start,end, n_points)
 
 def check_bounds(array):
     upper_indices = []
@@ -161,8 +162,8 @@ def try_exchange(noise, upper_indices, lower_indices):
         noise[up], noise[low] = noise[low], noise[up]
 
 ## VIBRATION LOOP ##
-if vibration>0:
-    for i, a in enumerate(np.linspace(start,end, n_points)):
+if vibration!=0:
+    for i, a in enumerate(x_eval):
         current = fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T)
         bounded_points = []
         num_bounded_points = max(200, int((10*delta/((end-start)/25.06))*n_points))
@@ -171,6 +172,8 @@ if vibration>0:
         
         plotlist.append(random.choice(bounded_points))
         # ideal.append(fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T))
+else:
+    plotlist = ideal.copy()
 
 ## TYPE 1 NOISE LOOP ##
 if stdev!=0:
@@ -188,12 +191,12 @@ if stdev!=0:
 
     plotlist = plotlist_temp
 
-params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), np.linspace(start,end, n_points), plotlist, p0=[contrast_set, g_fit, ct_fit])
+params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), x_eval, plotlist, p0=[contrast_set, g_fit, ct_fit])
 
 errors = np.sqrt(np.diag(cov))
 g_value_plot = '{:.3f}'.format(params[1] * 1e5)
 g_res_plot = '{:.3f}'.format(2 * errors[1] * 1e5)  # g-resolution in mGal
-redchisq_plot = '{:.3e}'.format(np.sum((fringe_fit(np.linspace(start, end, n_points)*1e6, *params, T=T) - np.array(plotlist))**2 / (np.array(plotlist))))
+redchisq_plot = '{:.3e}'.format(np.sum((fringe_fit(x_eval*1e6, *params, T=T) - np.array(plotlist))**2 / (np.array(plotlist))))
 
 
 fig = plt.figure(figsize=(12, 6))
@@ -201,14 +204,14 @@ ax1 = fig.add_subplot(111)
 ax2 = ax1.twiny()
 
 
-ax1.plot(np.linspace(start,end, n_points), ideal, label="Ideal before adding noise", color="red")
-ax1.plot(np.linspace(start,end, n_points), fringe_fit(np.linspace(start,end, n_points)*1e6, *params, T=T), label="Noise fit", color="orange")
+ax1.plot(x_eval, ideal, label="Ideal before adding noise", color="red")
+ax1.plot(x_eval, fringe_fit(x_eval*1e6, *params, T=T), label="Noise fit", color="orange")
 ax2.set_xlim(np.array(ax1.get_xlim())*(2*np.pi/keff_max)*1e5*1e6)
 ax2.set_xlabel("Gravitational Acceleration (mGal)")
 ax1.set_xlabel("Chirp Rate (MHz/s)")
 ax2.axvline(x=params[1]*1e5, color="green", linestyle="--", label="g-value")
-ax1.scatter(np.linspace(start,end, n_points), plotlist, alpha=0.5, label=f"{n_points} Noise added data points")
-plt.figtext(0.05, -0.14, r"$\sigma_{z}$" + " = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal"+"\nNoise added to the data with stdev: "+str(stdev)+"\nGravity ideal = "+str(g_fit*1e5)+" mGal"+"\nGravity noise = "+str(g_value_plot)+" " + r"$\pm$"+" "+str(g_res_plot)+" mGal\n"+r"$\chi^2_{red}$"+" = "+str(redchisq_plot)+"\nContrast of ideal line = "+str(abs(2*contrast_set))+"\nContrast of noise line = "+'{:.3f}'.format(2*params[0]));
+ax1.scatter(x_eval, plotlist, alpha=0.5, label=f"{n_points} Noise added data points")
+plt.figtext(0.05, -0.14, "$\sigma_{z}$" + " = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal"+"\nNoise added to the data with stdev: "+str(stdev)+"\nGravity ideal = "+str(g_fit*1e5)+" mGal"+"\nGravity noise = "+str(g_value_plot)+" " + "$\pm$"+" "+str(g_res_plot)+" mGal\n"+"$\chi^2_{red}$"+" = "+str(redchisq_plot)+"\nContrast of ideal line = "+str(abs(2*contrast_set))+"\nContrast of noise line = "+'{:.3f}'.format(2*params[0]));
 ax1.legend()
 plt.title("Vibration Noise, T = "+ str(T*1e3)+ " ms");
 
@@ -216,27 +219,45 @@ st.pyplot(fig)
 
 # st.markdown("""---""")
 
-st.title("Multiple runs errorchart ["+r"$\pm$"+ "2"+r"$\sigma$" +"]]")
+st.title("Multiple runs errorchart ["+"$\pm$"+ "2"+"$\sigma$" +"]]")
 
 gvals = []
 gerrors = []
-n_runs_init = 100
+n_runs_init = 50
 n_runs = int(st.text_input("Enter custom number of runs:", value=f"{n_runs_init}"))
 
 for i in range(n_runs):
     plotlist = []
-    ideal = []
+    print("Run no ", i)
 
-    for i, a in enumerate(np.linspace(start,end, n_points)):
-        current = fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T)
-        bounded_points = []
-        for num in np.linspace(-delta, delta, int((10*delta/0.012)*n_points)):
-            bounded_points.append(fringe_fit((a+num)*1e6, contrast_set, g_fit, ct_fit, T=T))
-        
-        plotlist.append(random.choice(bounded_points))
-        ideal.append(fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T))
+    if vibration!=0:
+        for i, a in enumerate(x_eval):
+            current = fringe_fit(a*1e6, contrast_set, g_fit, ct_fit, T=T)
+            bounded_points = []
+            num_bounded_points = max(200, int((10*delta/((end-start)/25.06))*n_points))
+            for num in np.linspace(-delta, delta, num_bounded_points):
+                bounded_points.append(fringe_fit((a+num)*1e6, contrast_set, g_fit, ct_fit, T=T))
+            
+            plotlist.append(random.choice(bounded_points))
+    else:
+        plotlist = ideal.copy()
+    
+    if stdev!=0:
+        while True:
+            plotlist_temp = plotlist.copy()
+            noise = np.random.normal(0, stdev, n_points)
+            plotlist_temp = plotlist_temp+noise
 
-    params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), np.linspace(start,end, n_points), plotlist, p0=[contrast_set, g_fit, ct_fit])
+            if check_bounds(plotlist_temp)[2]:
+                continue
+
+            if len(check_bounds(plotlist_temp)[0]) > 0:
+                try_exchange(noise, check_bounds(plotlist_temp)[0], check_bounds(plotlist_temp)[1])
+            break
+
+        plotlist = plotlist_temp
+
+    params, cov = curve_fit(lambda x, contrast, g, ct: fringe_fit(x*1e6, contrast, g, ct, T=T), x_eval, plotlist, p0=[contrast_set, g_fit, ct_fit])
 
     errors = np.sqrt(np.diag(cov))
     g_value_plot = '{:.3f}'.format(params[1] * 1e5)
@@ -252,6 +273,6 @@ plt.hlines(g_fit*1e5, 0, n_runs, color="red", label="Ideal g-value")
 plt.ylim(0.99999*g_fit*1e5, 1.00001*g_fit*1e5)
 plt.xlabel("Number of iterations")
 plt.ylabel("Gravitational Acceleration (mGal)")
-plt.title(f"Vibration Noise over {n_runs} iterations, No of points in fringe = {n_points}, T={T*1e3} ms, Contrast = "+str(abs(2*contrast_set))+ ", "+r"$\sigma_{z}$"+" = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal")
+plt.title(f"Vibration Noise over {n_runs} iterations, No of points in fringe = {n_points}, T={T*1e3} ms, Contrast = "+str(abs(2*contrast_set))+ ", "+"$\sigma_{z}$"+" = "+str(delta*(2*np.pi/keff_max)*1e5*1e6)+" mgal")
 
 st.pyplot(fig)
