@@ -3,4 +3,3 @@ matplotlib
 scipy
 plotly
 pandas
-time
